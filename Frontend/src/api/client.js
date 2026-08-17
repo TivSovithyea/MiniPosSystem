@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api"
+const API_URL = import.meta.env.VITE_API_URL ?? "https://minipossystem.onrender.com/api"
 
 export class ApiError extends Error {
   constructor(message, status, errors = {}) {
