@@ -69,7 +69,6 @@ MiniPos/
 │       ├── redux/
 │       ├── router/
 │       └── services/
-└── Laravel_Week_13_Category_CRUD.pptx  Supporting course material
 ```
 
 ## Requirements
