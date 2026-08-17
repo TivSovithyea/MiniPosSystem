@@ -1,0 +1,52 @@
+import { useCallback, useEffect, useState } from "react"
+import { Minus, Plus, Printer, Search, ShoppingBag, Trash2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { customerService, orderService, productService } from "@/services/apiServices"
+import { EmptyState, ErrorMessage, LoadingState } from "@/components/PageStates"
+import { Pagination } from "@/components/Pagination"
+import { useToast } from "@/hooks/useToast"
+
+export function PosPage() {
+  const toast = useToast()
+  const [result, setResult] = useState(null), [customers, setCustomers] = useState([]), [cart, setCart] = useState([])
+  const [page, setPage] = useState(1), [search, setSearch] = useState(""), [loading, setLoading] = useState(true)
+  const [customerId, setCustomerId] = useState(""), [payment, setPayment] = useState("cash"), [error, setError] = useState(""), [success, setSuccess] = useState(""), [busy, setBusy] = useState(false)
+  const load = useCallback(async () => { setLoading(true); try { setResult(await productService.list({ page, search, active_only: 1, per_page: 9 })) } catch (e) { setError(e.message) } finally { setLoading(false) } }, [page, search])
+  useEffect(() => { customerService.list({ per_page: 100 }).then((response) => setCustomers(response.data)).catch((e) => setError(e.message)) }, [])
+  useEffect(() => { const id = setTimeout(load, 250); return () => clearTimeout(id) }, [load])
+
+  function add(product) {
+    if (!product.stock) return
+    setCart((items) => { const found = items.find((item) => item.id === product.id); return found ? items.map((item) => item.id === product.id ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) } : item) : [...items, { ...product, quantity: 1 }] })
+  }
+  function adjust(id, amount) { setCart((items) => items.map((item) => item.id === id ? { ...item, quantity: Math.max(1, Math.min(item.quantity + amount, item.stock)) } : item)) }
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
+
+  async function checkout(shouldPrint = false) {
+    const preview = shouldPrint ? window.open("", "_blank") : null
+    if (shouldPrint && !preview) { toast.error("Please allow pop-ups to open the receipt preview.", "Preview blocked"); return }
+    if (preview) { preview.document.title = "Preparing receipt..."; preview.document.body.innerHTML = "<p style='font:16px sans-serif;padding:24px'>Preparing receipt...</p>" }
+    setBusy(true); setError(""); setSuccess("")
+    try {
+      const order = await orderService.create({ customer_id: customerId || null, payment_method: payment, items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })) })
+      setCart([]); setSuccess(`Order ${order.order_number} completed.`); toast.success(`Order ${order.order_number} completed.`, "Payment successful")
+      if (preview) preview.location.href = `/orders/${order.id}/invoice`
+      await load()
+    } catch (e) {
+      preview?.close(); setError(e.message); toast.error(e.message, "Checkout failed")
+    } finally { setBusy(false) }
+  }
+
+  return <div className="grid max-w-7xl gap-5 xl:grid-cols-[1fr_380px]">
+    <section><div className="mb-5"><h1 className="text-3xl font-bold">Point of sale</h1><p className="text-zinc-500">Select products to create an order.</p></div><ErrorMessage message={error}/>{success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p>}<div className="relative my-5"><Search className="absolute left-3 top-2.5 text-zinc-400" size={20}/><Input className="pl-10" placeholder="Search products..." value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></div>
+      {loading ? <LoadingState/> : !result?.data.length ? <EmptyState>No products available.</EmptyState> : <><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{result.data.map((product) => <Card key={product.id} className={`p-4 transition ${product.stock ? "cursor-pointer hover:border-indigo-300 hover:shadow-md" : "opacity-50"}`} onClick={() => add(product)}><div className="grid aspect-[4/3] place-items-center rounded-xl bg-zinc-100 text-6xl">{product.emoji || "📦"}</div><p className="mt-4 font-semibold">{product.name}</p><div className="mt-1 flex justify-between"><span className="text-sm text-zinc-500">{product.stock} in stock</span><span className="font-bold text-indigo-700">${Number(product.price).toFixed(2)}</span></div></Card>)}</div><Pagination meta={result} onPageChange={setPage}/></>}
+    </section>
+    <Card className="h-fit p-5 xl:sticky xl:top-5"><div className="flex justify-between"><div className="flex items-center gap-2"><ShoppingBag size={20}/><h2 className="font-bold">Current order</h2></div><Button variant="ghost" size="sm" onClick={() => setCart([])}>Clear</Button></div>
+      <div className="my-5 space-y-3">{cart.length ? cart.map((item) => <div key={item.id} className="rounded-xl bg-zinc-50 p-3"><div className="flex items-center gap-2"><div className="flex-1"><p className="text-sm font-semibold">{item.name}</p><p className="text-xs text-zinc-500">${Number(item.price).toFixed(2)} each</p></div><p className="text-sm font-bold">${(Number(item.price) * item.quantity).toFixed(2)}</p><button onClick={() => setCart(cart.filter((entry) => entry.id !== item.id))}><Trash2 size={16}/></button></div><div className="mt-2 flex items-center gap-2"><button className="rounded border p-1" onClick={() => adjust(item.id, -1)}><Minus size={13}/></button><span>{item.quantity}</span><button className="rounded border p-1" onClick={() => adjust(item.id, 1)}><Plus size={13}/></button></div></div>) : <p className="py-10 text-center text-sm text-zinc-500">Your cart is empty.</p>}</div>
+      <div className="space-y-3 border-t border-dashed pt-4"><label className="block text-xs text-zinc-500">Customer<select className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm text-zinc-900" value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Walk-in customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label><label className="block text-xs text-zinc-500">Payment<select className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm text-zinc-900" value={payment} onChange={(event) => setPayment(event.target.value)}><option value="cash">Cash</option><option value="card">Card</option><option value="qr">QR payment</option></select></label><div className="flex justify-between text-sm text-zinc-500"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div><div className="flex justify-between text-sm text-zinc-500"><span>Tax (10%)</span><span>${(subtotal * .1).toFixed(2)}</span></div><div className="flex justify-between text-lg font-bold"><span>Total</span><span>${(subtotal * 1.1).toFixed(2)}</span></div></div>
+      <div className="mt-5 grid gap-2"><Button className="w-full" variant="outline" disabled={!cart.length || busy} onClick={() => checkout(false)}>{busy ? "Processing..." : `Charge $${(subtotal * 1.1).toFixed(2)}`}</Button><Button className="w-full" disabled={!cart.length || busy} onClick={() => checkout(true)}><Printer size={17}/>{busy ? "Processing..." : "Charge & Print"}</Button></div>
+    </Card>
+  </div>
+}

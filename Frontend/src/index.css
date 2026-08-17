@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #18181b;
+  background: #f4f4f5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; }
+button, input, select, textarea { font: inherit; }
+button, a, select { -webkit-tap-highlight-color: transparent; }
+.overflow-x-auto { overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 639px) {
+  h1.text-3xl { font-size: 1.5rem; line-height: 2rem; }
+  table { min-width: 680px; }
+}
+
+@page { size: 80mm auto; margin: 4mm; }
+@media print {
+  :root, body { min-width: 0; background: white; }
+  .no-print { display: none !important; }
+  .app-shell > aside, .app-shell header { display: none !important; }
+  .app-shell > div { padding-left: 0 !important; }
+  main { padding: 0 !important; }
+  .receipt-page { width: 72mm; max-width: 72mm; margin: 0 auto; }
+  .receipt-sheet { width: 72mm; padding: 0 !important; box-shadow: none !important; }
+}
