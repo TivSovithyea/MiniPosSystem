@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['order_number', 'customer_id', 'subtotal', 'tax', 'discount', 'total', 'payment_method', 'payment_status', 'status', 'notes', 'ordered_at'])]
 class Order extends Model
@@ -26,5 +27,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function paywayPayment(): HasOne
+    {
+        return $this->hasOne(PaywayPayment::class);
     }
 }

@@ -124,6 +124,8 @@ All responses are JSON. Invalid input returns HTTP `422` and an `errors` object.
 | GET/POST | `/api/orders` | List orders or checkout |
 | GET | `/api/orders/{id}` | Get a receipt/order |
 | PATCH | `/api/orders/{id}/cancel` | Cancel and restore stock |
+| GET | `/api/orders/{id}/payway-payment` | Reconcile and return ABA PayWay status |
+| POST | `/api/payments/payway/callback` | Receive an ABA PayWay signed callback |
 
 Filter products with `search`, `category_id`, `active_only`, and `per_page`:
 
@@ -187,3 +189,39 @@ php artisan route:list --path=api
 ## 11. Before production
 
 Add role/permission checks, configure store-specific tax settings, verify payments with a provider, add inventory audit records, and configure HTTPS, backups, monitoring, and rate limiting. Sanctum token authentication is already installed.
+
+## 12. ABA PayWay sandbox
+
+Register for an ABA PayWay sandbox account, then configure these values in `Backend/.env`:
+
+```dotenv
+PAYWAY_BASE_URL=https://checkout-sandbox.payway.com.kh
+PAYWAY_MERCHANT_ID=your_sandbox_merchant_id
+PAYWAY_API_KEY=your_sandbox_api_key
+PAYWAY_CURRENCY=USD
+PAYWAY_PAYMENT_OPTION=abapay_khqr
+PAYWAY_QR_LIFETIME_MINUTES=10
+PAYWAY_CALLBACK_URL=https://your-api.example.com/api/payments/payway/callback
+```
+
+Apply the payment table and clear cached configuration:
+
+```bash
+php artisan migrate --force
+php artisan config:clear
+```
+
+Laravel calls PayWay's QR API and returns only the QR/deep-link data to React. The API key never enters the browser. PayWay sends its pushback to `PAYWAY_CALLBACK_URL`, and the frontend also polls Laravel so missed or delayed callbacks can be reconciled through PayWay's check-transaction API.
+
+PayWay callback requests must include their Base64 HMAC-SHA512 signature in `X-PayWay-HMAC-SHA512`. Laravel validates the signature, then independently checks the transaction with PayWay before completing an order.
+
+```json
+{
+  "tran_id": "POS-20260818-ABC123",
+  "apv": "123456",
+  "status": "0",
+  "return_params": "POS-20260818-ABC123"
+}
+```
+
+The callback URL must be public HTTPS and its domain/IP must be whitelisted in the PayWay sandbox merchant profile.

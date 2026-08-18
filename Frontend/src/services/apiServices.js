@@ -19,6 +19,10 @@ export const orderService = {
   create: (data) => apiClient("/orders", { method: "POST", body: JSON.stringify(data) }),
   cancel: (id) => apiClient(`/orders/${id}/cancel`, { method: "PATCH" }),
 }
+export const paywayPaymentService = {
+  get: (orderId) => apiClient(`/orders/${orderId}/payway-payment`),
+  simulate: (orderId) => apiClient(`/orders/${orderId}/payway-payment/simulate`, { method: "POST" }),
+}
 export const dashboardService = { get: () => apiClient("/dashboard") }
 export const reportService = {
   summary: (params) => apiClient(`/reports/summary${queryString(params)}`),

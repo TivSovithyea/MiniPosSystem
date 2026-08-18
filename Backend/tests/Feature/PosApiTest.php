@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -44,11 +46,63 @@ class PosApiTest extends TestCase
         $this->assertDatabaseCount('orders', 0);
     }
 
+    public function test_payway_qr_checkout_stays_pending_until_payway_confirms_payment(): void
+    {
+        config([
+            'services.payway.merchant_id' => 'sandbox-merchant',
+            'services.payway.api_key' => 'sandbox-key',
+            'services.payway.currency' => 'USD',
+            'services.payway.callback_url' => 'https://api.example.com/api/payments/payway/callback',
+        ]);
+        Http::fake([
+            '*/generate-qr' => Http::response([
+                'qrString' => '000201010212-payway-qr',
+                'qrImage' => 'data:image/png;base64,abc',
+                'abapay_deeplink' => 'abamobilebank://payway',
+                'status' => ['code' => '0', 'message' => 'Success.'],
+            ]),
+            '*/check-transaction-2' => Http::response([
+                'status' => ['code' => '00', 'message' => 'Success.'],
+                'data' => [
+                    'payment_status_code' => 0,
+                    'payment_status' => 'APPROVED',
+                    'original_currency' => 'USD',
+                    'original_amount' => 11,
+                    'apv' => '123456',
+                ],
+            ]),
+        ]);
+        $category = Category::create(['name' => 'Coffee', 'slug' => 'coffee']);
+        $product = Product::create(['category_id' => $category->id, 'name' => 'Latte', 'sku' => 'QR-1', 'price' => 5, 'stock' => 10]);
+
+        $order = $this->postJson('/api/orders', ['payment_method' => 'qr', 'items' => [['product_id' => $product->id, 'quantity' => 2]]])
+            ->assertCreated()->assertJsonPath('payment_status', 'pending')->assertJsonPath('status', 'pending')
+            ->assertJsonPath('payway_payment.currency', 'USD')->json();
+
+        $this->assertSame('000201010212-payway-qr', $order['payway_payment']['qr_payload']);
+        $this->assertSame('abamobilebank://payway', $order['payway_payment']['deeplink']);
+
+        $this->getJson("/api/orders/{$order['id']}/payway-payment")
+            ->assertOk()->assertJsonPath('status', 'paid');
+        $this->assertDatabaseHas('orders', ['id' => $order['id'], 'status' => 'completed', 'payment_status' => 'paid']);
+    }
+
+    public function test_payway_callback_requires_a_valid_hmac_signature(): void
+    {
+        config(['services.payway.api_key' => 'sandbox-key']);
+        $payload = json_encode(['tran_id' => 'POS-TEST', 'status' => '0']);
+
+        $this->call('POST', '/api/payments/payway/callback', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_PAYWAY_HMAC_SHA512' => 'invalid',
+        ], $payload)->assertForbidden();
+    }
+
     public function test_sales_reports_summarize_orders_products_and_customers(): void
     {
         $category = Category::create(['name' => 'Coffee', 'slug' => 'coffee']);
         $product = Product::create(['category_id' => $category->id, 'name' => 'Latte', 'sku' => 'COF-2', 'price' => 5, 'stock' => 10]);
-        $customer = \App\Models\Customer::create(['name' => 'Report Customer', 'email' => 'report@example.com']);
+        $customer = Customer::create(['name' => 'Report Customer', 'email' => 'report@example.com']);
         $this->postJson('/api/orders', ['customer_id' => $customer->id, 'payment_method' => 'cash', 'items' => [['product_id' => $product->id, 'quantity' => 2]]])->assertCreated();
 
         $this->getJson('/api/reports/summary')->assertOk()

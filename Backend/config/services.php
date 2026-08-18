@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'payway' => [
+        'base_url' => env('PAYWAY_BASE_URL', 'https://checkout-sandbox.payway.com.kh'),
+        'merchant_id' => env('PAYWAY_MERCHANT_ID'),
+        'api_key' => env('PAYWAY_API_KEY'),
+        'currency' => env('PAYWAY_CURRENCY', 'USD'),
+        'payment_option' => env('PAYWAY_PAYMENT_OPTION', 'abapay_khqr'),
+        'qr_lifetime_minutes' => (int) env('PAYWAY_QR_LIFETIME_MINUTES', 10),
+        'callback_url' => env('PAYWAY_CALLBACK_URL', rtrim((string) env('APP_URL'), '/').'/api/payments/payway/callback'),
+        'allow_sandbox_simulation' => (bool) env('PAYWAY_ALLOW_SANDBOX_SIMULATION', false),
+    ],
+
 ];

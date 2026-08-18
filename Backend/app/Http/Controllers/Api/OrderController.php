@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\PaywayPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class OrderController extends Controller
             ->latest('ordered_at')->paginate($request->integer('per_page', 20)));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, PaywayPaymentService $payway): JsonResponse
     {
         $data = $request->validate([
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'], 'payment_method' => ['required', 'in:cash,card,qr'],
@@ -47,13 +48,28 @@ class OrderController extends Controller
             }
             $discount = min((float) ($data['discount'] ?? 0), $subtotal);
             $tax = round(($subtotal - $discount) * 0.10, 2);
-            $order = Order::create(['order_number' => 'POS-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)), 'customer_id' => $data['customer_id'] ?? null, 'subtotal' => $subtotal, 'tax' => $tax, 'discount' => $discount, 'total' => $subtotal - $discount + $tax, 'payment_method' => $data['payment_method'], 'payment_status' => 'paid', 'status' => 'completed', 'notes' => $data['notes'] ?? null, 'ordered_at' => now()]);
+            $isQr = $data['payment_method'] === 'qr';
+            $order = Order::create(['order_number' => 'POS-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)), 'customer_id' => $data['customer_id'] ?? null, 'subtotal' => $subtotal, 'tax' => $tax, 'discount' => $discount, 'total' => $subtotal - $discount + $tax, 'payment_method' => $data['payment_method'], 'payment_status' => $isQr ? 'pending' : 'paid', 'status' => $isQr ? 'pending' : 'completed', 'notes' => $data['notes'] ?? null, 'ordered_at' => now()]);
             $order->items()->createMany($lines);
 
             return $order;
         });
 
-        return response()->json($order->load(['items.product:id,sku,emoji', 'customer:id,name']), 201);
+        if ($order->payment_method === 'qr') {
+            try {
+                $payway->create($order);
+            } catch (\Throwable $exception) {
+                DB::transaction(function () use ($order) {
+                    foreach ($order->items as $item) {
+                        Product::whereKey($item->product_id)->increment('stock', $item->quantity);
+                    }
+                    $order->delete();
+                });
+                throw $exception;
+            }
+        }
+
+        return response()->json($order->load(['items.product:id,sku,emoji', 'customer:id,name', 'paywayPayment']), 201);
     }
 
     public function show(Order $order): JsonResponse
@@ -61,15 +77,22 @@ class OrderController extends Controller
         return response()->json($order->load(['items.product:id,sku,emoji', 'customer']));
     }
 
-    public function cancel(Order $order): JsonResponse
+    public function cancel(Order $order, PaywayPaymentService $payway): JsonResponse
     {
         if ($order->status === 'cancelled') {
             return response()->json(['message' => 'Order is already cancelled.'], 409);
         }
+        if ($order->payment_method === 'qr' && $order->payment_status === 'pending' && $order->paywayPayment) {
+            if (! $payway->cancel($order->paywayPayment)) {
+                return response()->json(['message' => 'Payment was already approved and the order cannot be cancelled as unpaid.'], 409);
+            }
+        }
         DB::transaction(function () use ($order) {
             foreach ($order->items as $item) {
                 Product::whereKey($item->product_id)->increment('stock', $item->quantity);
-            } $order->update(['status' => 'cancelled', 'payment_status' => 'refunded']);
+            }
+            $order->update(['status' => 'cancelled', 'payment_status' => $order->payment_status === 'paid' ? 'refunded' : 'cancelled']);
+            $order->paywayPayment?->update(['status' => 'cancelled']);
         });
 
         return response()->json($order->fresh()->load('items'));
