@@ -35,6 +35,7 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "tailwindcss": "latest",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }

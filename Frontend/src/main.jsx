@@ -5,6 +5,9 @@ import App from "./App"
 import "./index.css"
 import { store } from "./redux/store"
 import { ToastProvider } from "./components/ui/toast"
+import { registerSW } from "virtual:pwa-register"
+
+registerSW({ immediate: true })
 
 createRoot(document.getElementById("root")).render(
     <StrictMode>
