@@ -24,7 +24,7 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => 'The provided credentials are incorrect.']);
         }
 
-        $user->tokens()->delete();
+        // $user->tokens()->delete();
 
         return response()->json([
             'user' => $user,
