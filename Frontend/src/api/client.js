@@ -20,11 +20,12 @@ export function queryString(params = {}) {
 
 export async function apiClient(path, options = {}) {
   const token = localStorage.getItem("minipos_token")
+  const isFormData = options.body instanceof FormData
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Accept": "application/json",
-      "Content-Type": "application/json",
+      ...(!isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },

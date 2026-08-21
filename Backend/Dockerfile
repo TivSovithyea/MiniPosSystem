@@ -1,4 +1,4 @@
-FROM php:8.4-cli
+FROM php:8.4-cli AS base
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install \
         pdo_mysql \
         pdo_pgsql \
+        pdo_sqlite \
         mbstring \
         zip \
         xml \
@@ -19,9 +20,22 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+RUN composer config --global source-fallback true
+
+FROM base AS test
+
 COPY . .
 
-RUN composer config --global source-fallback true
+RUN composer install \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress
+
+CMD ["php", "artisan", "test"]
+
+FROM base AS production
+
+COPY . .
 
 RUN composer install \
     --no-dev \

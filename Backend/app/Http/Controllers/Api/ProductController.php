@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
@@ -23,7 +24,11 @@ class ProductController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $product = Product::create($this->validated($request));
+        $data = $this->validated($request);
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+        $product = Product::create($data);
 
         return response()->json($product->load('category:id,name,slug'), 201);
     }
@@ -35,7 +40,12 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): JsonResponse
     {
-        $product->update($this->validated($request, $product));
+        $data = $this->validated($request, $product);
+        if ($request->hasFile('image')) {
+            $this->deleteImage($product);
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+        $product->update($data);
 
         return response()->json($product->load('category:id,name,slug'));
     }
@@ -45,6 +55,7 @@ class ProductController extends Controller
         if ($product->orderItems()->exists()) {
             return response()->json(['message' => 'A sold product cannot be deleted; set is_active to false instead.'], 409);
         }
+        $this->deleteImage($product);
         $product->delete();
 
         return response()->json(null, 204);
@@ -58,7 +69,15 @@ class ProductController extends Controller
             'category_id' => [$presence, 'integer', 'exists:categories,id'], 'name' => [$presence, 'string', 'max:150'],
             'sku' => [$presence, 'string', 'max:80', Rule::unique('products')->ignore($product)], 'description' => ['nullable', 'string'],
             'price' => [$presence, 'numeric', 'min:0'], 'cost' => ['sometimes', 'numeric', 'min:0'], 'stock' => ['sometimes', 'integer', 'min:0'],
-            'emoji' => ['nullable', 'string', 'max:16'], 'image' => ['nullable', 'url', 'max:2048'], 'is_active' => ['sometimes', 'boolean'],
+            'emoji' => ['nullable', 'string', 'max:16'], 'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], 'is_active' => ['sometimes', 'boolean'],
         ]);
+    }
+
+    private function deleteImage(Product $product): void
+    {
+        $path = $product->getRawOriginal('image');
+        if ($path && ! str_starts_with($path, 'http')) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

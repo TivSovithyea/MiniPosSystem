@@ -11,7 +11,14 @@ function resource(path) {
 }
 
 export const categoryService = resource("/categories")
-export const productService = resource("/products")
+export const productService = {
+  ...resource("/products"),
+  create: (data) => apiClient("/products", { method: "POST", body: data }),
+  update: (id, data) => {
+    data.append("_method", "PUT")
+    return apiClient(`/products/${id}`, { method: "POST", body: data })
+  },
+}
 export const customerService = resource("/customers")
 export const orderService = {
   list: (params) => apiClient(`/orders${queryString(params)}`),

@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -26,6 +28,32 @@ class PosApiTest extends TestCase
         $category = Category::create(['name' => 'Coffee', 'slug' => 'coffee']);
         Product::create(['category_id' => $category->id, 'name' => 'Americano', 'sku' => 'COF-1', 'price' => 3.5, 'stock' => 10]);
         $this->getJson('/api/products')->assertOk()->assertJsonPath('data.0.name', 'Americano');
+    }
+
+    public function test_product_image_can_be_uploaded_and_replaced(): void
+    {
+        Storage::fake('public');
+        $category = Category::create(['name' => 'Coffee', 'slug' => 'coffee']);
+
+        $product = $this->post('/api/products', [
+            'category_id' => $category->id,
+            'name' => 'Americano',
+            'sku' => 'COF-IMG',
+            'price' => 3.5,
+            'image' => UploadedFile::fake()->image('americano.jpg'),
+        ])->assertCreated()->json();
+
+        $firstPath = Product::findOrFail($product['id'])->getRawOriginal('image');
+        Storage::disk('public')->assertExists($firstPath);
+        $this->assertStringContainsString('/storage/products/', $product['image']);
+
+        $this->post("/api/products/{$product['id']}", [
+            '_method' => 'PUT',
+            'image' => UploadedFile::fake()->image('replacement.png'),
+        ])->assertOk();
+
+        Storage::disk('public')->assertMissing($firstPath);
+        Storage::disk('public')->assertExists(Product::findOrFail($product['id'])->getRawOriginal('image'));
     }
 
     public function test_checkout_uses_database_price_and_decrements_stock(): void
