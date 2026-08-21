@@ -300,7 +300,6 @@ class DatabaseSeeder extends Seeder
                         'price' => $item[3],
                         'cost' => $item[4],
                         'stock' => 30 + (($index * 17) % 120),
-                        'emoji' => $item[5],
                         'is_active' => true,
                     ]
                 );
@@ -356,7 +355,6 @@ class DatabaseSeeder extends Seeder
                             'price' => $price,
                             'cost' => round($price * 0.72, 2),
                             'stock' => 20 + (($skuNumber * 23) % 181),
-                            'emoji' => ['🥤', '🍜', '🛒', '📦'][($itemIndex + $skuNumber) % 4],
                             'is_active' => $skuNumber % 29 !== 0,
                         ]
                     );

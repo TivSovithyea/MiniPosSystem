@@ -69,7 +69,7 @@ class ProductController extends Controller
             'category_id' => [$presence, 'integer', 'exists:categories,id'], 'name' => [$presence, 'string', 'max:150'],
             'sku' => [$presence, 'string', 'max:80', Rule::unique('products')->ignore($product)], 'description' => ['nullable', 'string'],
             'price' => [$presence, 'numeric', 'min:0'], 'cost' => ['sometimes', 'numeric', 'min:0'], 'stock' => ['sometimes', 'integer', 'min:0'],
-            'emoji' => ['nullable', 'string', 'max:16'], 'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], 'is_active' => ['sometimes', 'boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], 'is_active' => ['sometimes', 'boolean'],
         ]);
     }
 

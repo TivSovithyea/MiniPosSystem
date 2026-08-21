@@ -69,12 +69,12 @@ class OrderController extends Controller
             }
         }
 
-        return response()->json($order->load(['items.product:id,sku,emoji', 'customer:id,name', 'paywayPayment']), 201);
+        return response()->json($order->load(['items.product:id,sku', 'customer:id,name', 'paywayPayment']), 201);
     }
 
     public function show(Order $order): JsonResponse
     {
-        return response()->json($order->load(['items.product:id,sku,emoji', 'customer']));
+        return response()->json($order->load(['items.product:id,sku', 'customer']));
     }
 
     public function cancel(Order $order, PaywayPaymentService $payway): JsonResponse

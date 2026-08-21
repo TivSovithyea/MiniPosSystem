@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { CheckCircle2, Clock3, Minus, Plus, Printer, Search, ShoppingBag, Trash2 } from "lucide-react"
+import { CheckCircle2, Clock3, Minus, Package, Plus, Printer, Search, ShoppingBag, Trash2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -14,8 +14,7 @@ function ProductVisual({ product }) {
   if (product.image) {
     return <img className="h-full w-full object-cover" src={product.image} alt={product.name}/>
   }
-  if (product.emoji) return <span className="text-6xl">{product.emoji}</span>
-  return <span className="text-sm font-semibold text-zinc-400">N/A</span>
+  return <Package className="text-zinc-300" size={56}/>
 }
 
 export function PosPage() {
