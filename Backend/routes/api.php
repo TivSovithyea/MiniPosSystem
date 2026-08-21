@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => ['status' => 'ok', 'service' => 'MiniPOS API']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::get('/auth/keycloak/redirect', [AuthController::class, 'keycloakRedirect']);
+Route::get('/auth/keycloak/callback', [AuthController::class, 'keycloakCallback']);
+Route::post('/auth/session/continue', [AuthController::class, 'continueSession']);
 Route::post('/payments/payway/callback', [PaywayPaymentController::class, 'callback'])->middleware('throttle:60,1');
 
 Route::middleware('auth:sanctum')->group(function () {

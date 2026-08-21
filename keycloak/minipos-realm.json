@@ -1,0 +1,33 @@
+{
+  "realm": "minipos",
+  "enabled": true,
+  "displayName": "MiniPOS",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "minipos-web",
+      "name": "MiniPOS Web",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "minipos-local-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "publicClient": false,
+      "redirectUris": ["http://localhost:8000/api/auth/keycloak/callback"],
+      "webOrigins": ["http://localhost:5173"]
+    }
+  ],
+  "users": [
+    {"username":"user01","email":"user01@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 01","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user02","email":"user02@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 02","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user03","email":"user03@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 03","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user04","email":"user04@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 04","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user05","email":"user05@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 05","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user06","email":"user06@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 06","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user07","email":"user07@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 07","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user08","email":"user08@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 08","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user09","email":"user09@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 09","credentials":[{"type":"password","value":"password","temporary":false}]},
+    {"username":"user10","email":"user10@minipos.test","emailVerified":true,"enabled":true,"firstName":"MiniPOS","lastName":"User 10","credentials":[{"type":"password","value":"password","temporary":false}]}
+  ]
+}

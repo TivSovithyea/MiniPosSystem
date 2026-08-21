@@ -10,6 +10,14 @@ import { Pagination } from "@/components/Pagination"
 import { useToast } from "@/hooks/useToast"
 import { Modal } from "@/components/Modal"
 
+function ProductVisual({ product }) {
+  if (product.image) {
+    return <img className="h-full w-full object-cover" src={product.image} alt={product.name}/>
+  }
+  if (product.emoji) return <span className="text-6xl">{product.emoji}</span>
+  return <span className="text-sm font-semibold text-zinc-400">N/A</span>
+}
+
 export function PosPage() {
   const toast = useToast()
   const [result, setResult] = useState(null), [customers, setCustomers] = useState([]), [cart, setCart] = useState([])
@@ -98,7 +106,7 @@ export function PosPage() {
 
   return <div className="grid max-w-7xl gap-5 xl:grid-cols-[1fr_380px]">
     <section><div className="mb-5"><h1 className="text-3xl font-bold">Point of sale</h1><p className="text-zinc-500">Select products to create an order.</p></div><ErrorMessage message={error}/>{success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p>}<div className="relative my-5"><Search className="absolute left-3 top-2.5 text-zinc-400" size={20}/><Input className="pl-10" placeholder="Search products..." value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></div>
-      {loading ? <LoadingState/> : !result?.data.length ? <EmptyState>No products available.</EmptyState> : <><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{result.data.map((product) => <Card key={product.id} className={`p-4 transition ${product.stock ? "cursor-pointer hover:border-indigo-300 hover:shadow-md" : "opacity-50"}`} onClick={() => add(product)}><div className="grid aspect-[4/3] place-items-center rounded-xl bg-zinc-100 text-6xl">{product.emoji || "📦"}</div><p className="mt-4 font-semibold">{product.name}</p><div className="mt-1 flex justify-between"><span className="text-sm text-zinc-500">{product.stock} in stock</span><span className="font-bold text-indigo-700">${Number(product.price).toFixed(2)}</span></div></Card>)}</div><Pagination meta={result} onPageChange={setPage}/></>}
+      {loading ? <LoadingState/> : !result?.data.length ? <EmptyState>No products available.</EmptyState> : <><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{result.data.map((product) => <Card key={product.id} className={`p-4 transition ${product.stock ? "cursor-pointer hover:border-indigo-300 hover:shadow-md" : "opacity-50"}`} onClick={() => add(product)}><div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-xl bg-zinc-100"><ProductVisual product={product}/></div><p className="mt-4 font-semibold">{product.name}</p><div className="mt-1 flex justify-between"><span className="text-sm text-zinc-500">{product.stock} in stock</span><span className="font-bold text-indigo-700">${Number(product.price).toFixed(2)}</span></div></Card>)}</div><Pagination meta={result} onPageChange={setPage}/></>}
     </section>
     <Card className="h-fit p-5 xl:sticky xl:top-5"><div className="flex justify-between"><div className="flex items-center gap-2"><ShoppingBag size={20}/><h2 className="font-bold">Current order</h2></div><Button variant="ghost" size="sm" onClick={() => setCart([])}>Clear</Button></div>
       <div className="my-5 space-y-3">{cart.length ? cart.map((item) => <div key={item.id} className="rounded-xl bg-zinc-50 p-3"><div className="flex items-center gap-2"><div className="flex-1"><p className="text-sm font-semibold">{item.name}</p><p className="text-xs text-zinc-500">${Number(item.price).toFixed(2)} each</p></div><p className="text-sm font-bold">${(Number(item.price) * item.quantity).toFixed(2)}</p><button onClick={() => setCart(cart.filter((entry) => entry.id !== item.id))}><Trash2 size={16}/></button></div><div className="mt-2 flex items-center gap-2"><button className="rounded border p-1" onClick={() => adjust(item.id, -1)}><Minus size={13}/></button><span>{item.quantity}</span><button className="rounded border p-1" onClick={() => adjust(item.id, 1)}><Plus size={13}/></button></div></div>) : <p className="py-10 text-center text-sm text-zinc-500">Your cart is empty.</p>}</div>

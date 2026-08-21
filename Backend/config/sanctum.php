@@ -52,6 +52,8 @@ return [
 
     'expiration' => null,
 
+    'active_session_minutes' => (int) env('AUTH_ACTIVE_SESSION_MINUTES', 15),
+
     /*
     |--------------------------------------------------------------------------
     | Token Prefix

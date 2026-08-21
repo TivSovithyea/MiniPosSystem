@@ -1,11 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "https://minipossystem.onrender.com/api"
+export const apiUrl = (path = "") => `${API_URL}${path}`
 
 export class ApiError extends Error {
-  constructor(message, status, errors = {}) {
+  constructor(message, status, errors = {}, code = null) {
     super(message)
     this.name = "ApiError"
     this.status = status
     this.errors = errors
+    this.code = code
   }
 }
 
@@ -37,7 +39,7 @@ export async function apiClient(path, options = {}) {
       window.dispatchEvent(new Event("minipos:unauthorized"))
     }
     const validationMessage = body?.errors ? Object.values(body.errors).flat()[0] : null
-    throw new ApiError(validationMessage ?? body?.message ?? `Request failed: ${response.status}`, response.status, body?.errors)
+    throw new ApiError(validationMessage ?? body?.message ?? `Request failed: ${response.status}`, response.status, body?.errors, body?.code)
   }
   if (response.status === 204) return undefined
   return response.json()

@@ -21,7 +21,7 @@ export const login = createAsyncThunk(
       localStorage.setItem("minipos_token", response.token)
       return response
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : "Login failed")
+      return rejectWithValue(error instanceof Error ? { message: error.message, code: error.code } : { message: "Login failed" })
     }
   },
 )
@@ -57,7 +57,7 @@ const authSlice = createSlice({
     builder
       .addCase(login.pending, (state) => { state.loading = true; state.error = null })
       .addCase(login.fulfilled, (state, action) => { state.loading = false; state.user = action.payload.user; state.token = action.payload.token })
-      .addCase(login.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? "Login failed" })
+      .addCase(login.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message ?? "Login failed" })
       .addCase(loadUser.pending, (state) => { state.loading = true })
       .addCase(loadUser.fulfilled, (state, action) => { state.loading = false; state.user = action.payload })
       .addCase(loadUser.rejected, (state) => { state.loading = false; state.user = null; state.token = null })

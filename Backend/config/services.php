@@ -46,4 +46,15 @@ return [
         'allow_sandbox_simulation' => (bool) env('PAYWAY_ALLOW_SANDBOX_SIMULATION', false),
     ],
 
+    'keycloak' => [
+        'enabled' => (bool) env('KEYCLOAK_ENABLED', false),
+        'base_url' => rtrim((string) env('KEYCLOAK_BASE_URL', 'http://localhost:8080'), '/'),
+        'public_url' => rtrim((string) env('KEYCLOAK_PUBLIC_URL', env('KEYCLOAK_BASE_URL', 'http://localhost:8080')), '/'),
+        'realm' => env('KEYCLOAK_REALM', 'minipos'),
+        'client_id' => env('KEYCLOAK_CLIENT_ID', 'minipos-web'),
+        'client_secret' => env('KEYCLOAK_CLIENT_SECRET'),
+        'redirect_uri' => env('KEYCLOAK_REDIRECT_URI', rtrim((string) env('APP_URL'), '/').'/api/auth/keycloak/callback'),
+        'frontend_callback' => env('KEYCLOAK_FRONTEND_CALLBACK', 'http://localhost:5173/auth/sso/callback'),
+    ],
+
 ];

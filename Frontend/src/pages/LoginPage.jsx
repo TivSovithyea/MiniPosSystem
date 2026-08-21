@@ -6,8 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { clearAuthError, login } from "@/redux/slices/authSlice"
+import { apiUrl } from "@/api/client"
 
 export function LoginPage() {
+  const keycloakEnabled = import.meta.env.VITE_KEYCLOAK_ENABLED === "true"
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,7 +24,12 @@ export function LoginPage() {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const result = await dispatch(login({ email, password }))
+    let result = await dispatch(login({ email, password }))
+    if (login.rejected.match(result) && result.payload?.code === "SESSION_CONFLICT") {
+      const shouldContinue = window.confirm("This user is currently being used on another device. Do you want to continue and disconnect the other session?")
+      if (!shouldContinue) return
+      result = await dispatch(login({ email, password, force_session: true }))
+    }
     if (login.fulfilled.match(result)) navigate(from, { replace: true })
   }
 
@@ -35,6 +42,7 @@ export function LoginPage() {
         {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         <Button className="w-full" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</Button>
       </form>
+      {keycloakEnabled && <><div className="my-5 flex items-center gap-3 text-xs text-zinc-400"><span className="h-px flex-1 bg-zinc-200"/>or<span className="h-px flex-1 bg-zinc-200"/></div><Button type="button" variant="outline" className="w-full" onClick={() => { window.location.href = apiUrl('/auth/keycloak/redirect') }}>Sign in with Keycloak SSO</Button></>}
       <p className="mt-5 text-center text-xs text-zinc-400">Demo: admin@minipos.test / password</p>
     </Card>
   </main>

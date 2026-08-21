@@ -12,9 +12,11 @@ import { OrdersPage } from "@/pages/OrdersPage"
 import { ProductsPage } from "@/pages/ProductsPage"
 import { ReportsPage } from "@/pages/ReportsPage"
 import { InvoicePage } from "@/pages/InvoicePage"
+import { SsoCallbackPage } from "@/pages/SsoCallbackPage"
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/auth/sso/callback", element: <SsoCallbackPage /> },
   { element: <ProtectedRoute />, children: [
     { path: "/", element: <AppLayout />, errorElement: <NotFoundPage />, children: [
       { index: true, element: <DashboardPage /> },

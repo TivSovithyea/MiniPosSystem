@@ -32,6 +32,16 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        foreach (range(1, 10) as $number) {
+            User::updateOrCreate(
+                ['email' => sprintf('user%02d@minipos.test', $number)],
+                [
+                    'name' => sprintf('MiniPOS User %02d', $number),
+                    'password' => Hash::make('password'),
+                ]
+            );
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Categories
