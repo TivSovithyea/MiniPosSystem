@@ -13,6 +13,7 @@ import { ProductsPage } from "@/pages/ProductsPage"
 import { ReportsPage } from "@/pages/ReportsPage"
 import { InvoicePage } from "@/pages/InvoicePage"
 import { SsoCallbackPage } from "@/pages/SsoCallbackPage"
+import { UsersPage } from "@/pages/UsersPage"
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "products", element: <ProductsPage /> },
       { path: "categories", element: <CategoriesPage /> },
       { path: "customers", element: <CustomersPage /> },
+      { path: "users", element: <UsersPage /> },
       { path: "orders", element: <OrdersPage /> },
       { path: "orders/:orderId/invoice", element: <InvoicePage /> },
       { path: "reports", element: <ReportsPage /> },

@@ -20,6 +20,7 @@ export const productService = {
   },
 }
 export const customerService = resource("/customers")
+export const userService = resource("/users")
 export const orderService = {
   list: (params) => apiClient(`/orders${queryString(params)}`),
   get: (id) => apiClient(`/orders/${id}`),

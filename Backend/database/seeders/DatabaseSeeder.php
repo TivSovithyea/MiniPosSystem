@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        foreach (range(1, 10) as $number) {
+        foreach (range(1, 20) as $number) {
             User::updateOrCreate(
                 ['email' => sprintf('user%02d@minipos.test', $number)],
                 [
@@ -48,14 +48,21 @@ class DatabaseSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         $categories = collect([
-            ['Coffee', 'coffee'],
-            ['Bakery', 'bakery'],
-            ['Tea', 'tea'],
-            ['Food', 'food'],
-            ['Cold Drinks', 'cold-drinks'],
-            ['Desserts', 'desserts'],
-            ['Snacks', 'snacks'],
-            ['Retail', 'retail'],
+            ['Coffee & Hot Drinks', 'coffee'],
+            ['Bakery & Bread', 'bakery'],
+            ['Tea & Ready-to-Drink', 'tea'],
+            ['Instant & Ready Meals', 'food'],
+            ['Water & Soft Drinks', 'cold-drinks'],
+            ['Dairy & Desserts', 'desserts'],
+            ['Snacks & Confectionery', 'snacks'],
+            ['Household & General', 'retail'],
+            ['Rice, Noodles & Staples', 'staples'],
+            ['Cooking & Condiments', 'cooking'],
+            ['Personal Care', 'personal-care'],
+            ['Frozen & Chilled Food', 'frozen-chilled'],
+            ['Baby Care', 'baby-care'],
+            ['Automotive & Travel', 'automotive-travel'],
+            ['Beer, Wine & Spirits', 'beer-wine-spirits'],
         ])->mapWithKeys(function (array $item) {
 
             $category = Category::updateOrCreate(
@@ -299,6 +306,67 @@ class DatabaseSeeder extends Seeder
                 );
             }
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cambodia Convenience-Mart Demo Catalog
+        |--------------------------------------------------------------------------
+        |
+        | These are representative demo records inspired by the mix normally found
+        | in Cambodian fuel-station marts. They are not TELA's official live SKUs
+        | or prices. Two package variants for eight items across fifteen categories
+        | add 240 products; together with the core catalog this seeds 264 products.
+        |
+        */
+        $martCatalog = [
+            'coffee' => ['Cambodia Arabica Coffee', 'Kampot Robusta Coffee', 'Brown Coffee Can', 'Birdy Coffee', 'Nescafe Latte', 'Nescafe Espresso', 'OldTown White Coffee', 'Cafe Amazon Mocha'],
+            'bakery' => ['Fresh Milk Bread', 'Whole Wheat Bread', 'Pandan Bun', 'Red Bean Bun', 'Chocolate Croissant', 'Butter Cake', 'Banana Cake', 'Mini Swiss Roll'],
+            'tea' => ['Oishi Green Tea', 'Ichitan Honey Lemon Tea', 'Fuze Tea Lemon', 'Pokka Jasmine Tea', 'Lipton Ice Tea', 'Cambodia Iced Tea', 'Soy Milk Original', 'Chocolate Malt Drink'],
+            'food' => ['Mama Tom Yum Noodles', 'Mama Pork Noodles', 'Indomie Mi Goreng', 'Samyang Hot Chicken Noodles', 'Rice Porridge Cup', 'Tuna Sandwich', 'Chicken Burger', 'Khmer Pork Rice Box'],
+            'cold-drinks' => ['Vital Premium Water', 'KulEN Pure Water', 'Cambodia Water', 'Coca-Cola Original', 'Pepsi Original', 'Sprite Lemon Lime', 'Fanta Orange', 'Red Bull Energy Drink'],
+            'desserts' => ['Dutch Mill Yoghurt', 'Meiji Fresh Milk', 'Foremost Chocolate Milk', 'Wall’s Vanilla Ice Cream', 'Wall’s Chocolate Ice Cream', 'Mochi Ice Cream', 'Caramel Pudding', 'Fruit Jelly Cup'],
+            'snacks' => ['Hanami Prawn Crackers', 'Lay’s Original Chips', 'Lay’s Nori Seaweed Chips', 'Jack n Jill Roller Coaster', 'Pocky Chocolate', 'Oreo Original', 'Dried Mango', 'Roasted Cashew Nuts'],
+            'retail' => ['Cellox Facial Tissue', 'Scott Toilet Tissue', 'Sunlight Dishwashing Liquid', 'Comfort Fabric Softener', 'Attack Laundry Powder', 'Baygon Insect Spray', 'Garbage Bags', 'AA Alkaline Batteries'],
+            'staples' => ['Phka Rumduol Rice', 'Jasmine Rice', 'Brown Rice', 'Rice Vermicelli', 'Dried Egg Noodles', 'Instant Rice Noodles', 'Rolled Oats', 'All-Purpose Flour'],
+            'cooking' => ['Fish Sauce', 'Oyster Sauce', 'Light Soy Sauce', 'Chili Sauce', 'Tomato Ketchup', 'Palm Sugar', 'Iodized Salt', 'Vegetable Cooking Oil'],
+            'personal-care' => ['Colgate Toothpaste', 'Oral-B Toothbrush', 'Dove Body Wash', 'Lifebuoy Hand Wash', 'Sunsilk Shampoo', 'Pantene Conditioner', 'Nivea Deodorant', 'Wet Wipes'],
+            'frozen-chilled' => ['CP Chicken Sausage', 'CP Pork Sausage', 'Frozen Fish Balls', 'Frozen Beef Balls', 'French Fries', 'Chicken Nuggets', 'Crab Sticks', 'Frozen Dumplings'],
+            'baby-care' => ['MamyPoko Diapers', 'Huggies Dry Diapers', 'Kodomo Baby Powder', 'Johnson’s Baby Wash', 'Baby Wet Wipes', 'Cerelac Rice Cereal', 'UHT Growing-Up Milk', 'Baby Feeding Bottle'],
+            'automotive-travel' => ['Engine Oil 10W-40', 'Coolant Premix', 'Windshield Washer Fluid', 'Microfiber Cleaning Cloth', 'Car Air Freshener', 'USB Car Charger', 'Disposable Raincoat', 'Travel Neck Pillow'],
+            'beer-wine-spirits' => ['Cambodia Beer', 'Angkor Premium Beer', 'Ganzberg Beer', 'Hanuman Beer', 'ABC Extra Stout', 'Tiger Crystal', 'Singha Beer', 'Red Wine Selection'],
+        ];
+
+        $packageVariants = [
+            ['Small', 1.00],
+            ['Large', 1.65],
+        ];
+        $martProducts = collect();
+        $skuNumber = 1;
+
+        foreach ($martCatalog as $slug => $names) {
+            foreach ($names as $itemIndex => $name) {
+                foreach ($packageVariants as [$size, $multiplier]) {
+                    $price = round((0.75 + (($skuNumber * 17) % 925) / 100) * $multiplier, 2);
+                    $product = Product::updateOrCreate(
+                        ['sku' => sprintf('TM-%04d', $skuNumber)],
+                        [
+                            'category_id' => $categories[$slug]->id,
+                            'name' => $name.' - '.$size,
+                            'description' => 'Demo convenience-mart product for Cambodia retail POS testing.',
+                            'price' => $price,
+                            'cost' => round($price * 0.72, 2),
+                            'stock' => 20 + (($skuNumber * 23) % 181),
+                            'emoji' => ['🥤', '🍜', '🛒', '📦'][($itemIndex + $skuNumber) % 4],
+                            'is_active' => $skuNumber % 29 !== 0,
+                        ]
+                    );
+                    $martProducts->push($product);
+                    $skuNumber++;
+                }
+            }
+        }
+
+        $products = $products->concat($martProducts);
 
         /*
         |--------------------------------------------------------------------------

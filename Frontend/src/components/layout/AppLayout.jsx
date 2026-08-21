@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BarChart3, Boxes, FolderTree, LayoutDashboard, LogOut, Menu, ReceiptText, ShoppingCart, Store, Users, X } from "lucide-react"
+import { BarChart3, Boxes, FolderTree, LayoutDashboard, LogOut, Menu, ReceiptText, ShoppingCart, Store, UserCog, Users, X } from "lucide-react"
 import { NavLink, Outlet } from "react-router-dom"
 import { cn } from "@/utils/cn"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
@@ -8,7 +8,8 @@ import { logout } from "@/redux/slices/authSlice"
 const links = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard }, { to: "/pos", label: "Point of sale", icon: ShoppingCart },
   { to: "/products", label: "Products", icon: Boxes }, { to: "/categories", label: "Categories", icon: FolderTree },
-  { to: "/customers", label: "Customers", icon: Users }, { to: "/orders", label: "Orders", icon: ReceiptText }, { to: "/reports", label: "Reports", icon: BarChart3 },
+  { to: "/customers", label: "Customers", icon: Users }, { to: "/users", label: "Users", icon: UserCog },
+  { to: "/orders", label: "Orders", icon: ReceiptText }, { to: "/reports", label: "Reports", icon: BarChart3 },
 ]
 
 function SidebarContent({ onNavigate, onSignOut }) {

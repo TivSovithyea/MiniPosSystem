@@ -78,6 +78,34 @@ class ApiEndpointTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors(['email', 'phone']);
     }
 
+    public function test_user_crud_endpoints(): void
+    {
+        $user = $this->postJson('/api/users', [
+            'name' => 'Sok Dara', 'email' => 'dara@minipos.test', 'password' => 'password123',
+        ])->assertCreated()->assertJsonMissingPath('password')->json();
+
+        $this->getJson('/api/users?search=dara@minipos.test')->assertOk()
+            ->assertJsonPath('data.0.id', $user['id']);
+        $this->getJson("/api/users/{$user['id']}")->assertOk()
+            ->assertJsonPath('name', 'Sok Dara');
+        $this->putJson("/api/users/{$user['id']}", ['name' => 'Dara Sok', 'password' => ''])
+            ->assertOk()->assertJsonPath('name', 'Dara Sok');
+        $this->deleteJson("/api/users/{$user['id']}")->assertNoContent();
+        $this->assertDatabaseMissing('users', ['id' => $user['id']]);
+    }
+
+    public function test_user_validation_and_self_delete_protection(): void
+    {
+        $existing = User::factory()->create(['email' => 'existing@minipos.test']);
+
+        $this->postJson('/api/users', [
+            'name' => 'Duplicate', 'email' => $existing->email, 'password' => 'short',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['email', 'password']);
+
+        $this->deleteJson('/api/users/'.$this->app['auth']->user()->id)
+            ->assertConflict()->assertJsonPath('message', 'You cannot delete your own account.');
+    }
+
     public function test_product_crud_endpoints_and_filters(): void
     {
         $category = Category::create(['name' => 'Coffee', 'slug' => 'coffee']);
