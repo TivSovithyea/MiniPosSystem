@@ -1,21 +1,22 @@
 # MiniPOS
 
-MiniPOS is a responsive, open-source point-of-sale and store-management application for small marts, cafes, and retail shops. It combines a Laravel REST API with a React frontend and includes inventory management, checkout, sales reporting, token authentication, and printable 80 mm receipts.
+MiniPOS is a responsive, open-source point-of-sale and store-management application for small marts, cafes, and retail shops. It combines a Laravel REST API with an installable React PWA and includes inventory management, checkout, reporting, single-session authentication, ABA PayWay KHQR payments, and printable 80 mm receipts.
 
 > This project is suitable for learning, prototyping, and small-business customization. Review the [production checklist](#production-checklist) before using it with real payments or customer data.
 
 ## Features
 
-- Secure login and logout with Laravel Sanctum API tokens
+- Secure login and logout with Laravel Sanctum API tokens and single-active-session enforcement
+- Optional Keycloak/OpenID Connect backend integration for SSO
 - Responsive dashboard for desktop, tablet, and mobile
 - Category, product, and customer CRUD with search and pagination
 - Product filtering, stock tracking, and transactional checkout
-- Cash, card, and QR payment methods
+- Cash, card, and ABA PayWay KHQR payment flows
 - Charge or charge-and-print checkout actions
-- Order history, cancellation, refunds, and stock restoration
+- Order history, cancellation, payment-state tracking, and stock restoration
 - Order, product-sales, and customer-sales reports with date filters
 - 80 mm mini-mart receipt printing and Save as PDF support
-- Toast notifications and authenticated route protection
+- Installable PWA, toast notifications, and authenticated route protection
 - Large, rerunnable demonstration dataset
 - Laravel feature tests and frontend lint/build checks
 
@@ -25,11 +26,14 @@ MiniPOS is a responsive, open-source point-of-sale and store-management applicat
 |---|---|
 | Backend | PHP 8.3+, Laravel 13, Eloquent ORM |
 | Authentication | Laravel Sanctum |
+| Optional SSO | Keycloak 26 / OpenID Connect |
 | Database | MySQL 8+ |
 | Frontend | React, Vite, React Router |
 | State | Redux Toolkit |
 | Styling | Tailwind CSS, class-variance-authority |
 | Icons | Lucide React |
+| Payments | ABA PayWay KHQR |
+| PWA | vite-plugin-pwa / Workbox |
 | Testing | PHPUnit, Laravel HTTP tests, ESLint |
 
 ## Architecture
@@ -69,6 +73,8 @@ MiniPos/
 │       ├── redux/
 │       ├── router/
 │       └── services/
+├── keycloak/                Optional local realm configuration
+└── docker-compose.keycloak.yml
 ```
 
 ## Requirements
@@ -78,6 +84,7 @@ MiniPos/
 - MySQL 8 or newer
 - Node.js 20 or newer
 - npm
+- Docker with Compose (optional, for local Keycloak SSO)
 
 ```bash
 php -v
@@ -158,7 +165,11 @@ The default `Frontend/.env` value is:
 
 ```dotenv
 VITE_API_URL=http://localhost:8000/api
+VITE_KEYCLOAK_ENABLED=true
+VITE_SESSION_CHECK_INTERVAL_MS=3000
 ```
+
+`VITE_KEYCLOAK_ENABLED` is currently reserved for the SSO UI. The backend Keycloak endpoints and local realm are available, but the login-page SSO button is intentionally hidden.
 
 ## Running locally
 
@@ -224,6 +235,9 @@ Accept: application/json
 |---|---|---|
 | GET | `/api/health` | Check API availability |
 | POST | `/api/auth/login` | Create an API token |
+| GET | `/api/auth/keycloak/redirect` | Start the optional Keycloak login flow |
+| GET | `/api/auth/keycloak/callback` | Complete the Keycloak login flow |
+| POST | `/api/auth/session/continue` | Confirm an SSO session takeover |
 | GET | `/api/auth/me` | Get the authenticated user |
 | POST | `/api/auth/logout` | Revoke the current token |
 | GET | `/api/dashboard` | Dashboard totals and recent activity |
@@ -233,9 +247,14 @@ Accept: application/json
 | GET, PUT, DELETE | `/api/products/{id}` | Manage a product |
 | GET, POST | `/api/customers` | List or create customers |
 | GET, PUT, DELETE | `/api/customers/{id}` | Manage a customer |
+| GET, POST | `/api/users` | List or create application users |
+| GET, PUT, DELETE | `/api/users/{id}` | Manage an application user |
 | GET, POST | `/api/orders` | List orders or perform checkout |
 | GET | `/api/orders/{id}` | Get order and receipt data |
 | PATCH | `/api/orders/{id}/cancel` | Cancel an order and restore stock |
+| GET | `/api/orders/{id}/payway-payment` | Reconcile and return PayWay payment status |
+| POST | `/api/orders/{id}/payway-payment/simulate` | Simulate sandbox payment approval when enabled |
+| POST | `/api/payments/payway/callback` | Receive a signed PayWay callback |
 | GET | `/api/reports/summary` | Sales totals and daily summaries |
 | GET | `/api/reports/products` | Product-sales totals |
 | GET | `/api/reports/customers` | Customer-sales totals |
@@ -269,6 +288,35 @@ curl -X POST http://localhost:8000/api/orders \
 ```
 
 The backend reads prices from MySQL, calculates totals and tax, locks inventory rows, and rolls back the transaction when stock is insufficient.
+
+## ABA PayWay KHQR (optional)
+
+Cash and card checkout work without a payment-provider account. To enable QR checkout, add PayWay sandbox credentials to `Backend/.env`:
+
+```dotenv
+PAYWAY_BASE_URL=https://checkout-sandbox.payway.com.kh
+PAYWAY_MERCHANT_ID=your_sandbox_merchant_id
+PAYWAY_API_KEY=your_sandbox_api_key
+PAYWAY_CURRENCY=USD
+PAYWAY_PAYMENT_OPTION=abapay_khqr
+PAYWAY_QR_LIFETIME_MINUTES=10
+PAYWAY_CALLBACK_URL=https://your-public-api.example.com/api/payments/payway/callback
+PAYWAY_ALLOW_SANDBOX_SIMULATION=false
+```
+
+Then run `php artisan config:clear`. The callback must be public HTTPS and allowed by your PayWay sandbox merchant profile. MiniPOS signs server-to-server requests, keeps the API key out of the browser, validates signed callbacks, and polls PayWay to reconcile payment status. For local-only demos, set `PAYWAY_ALLOW_SANDBOX_SIMULATION=true`; simulation is restricted to Laravel's `local` environment and a sandbox PayWay URL.
+
+## Keycloak SSO (optional)
+
+The repository includes a development Keycloak realm and Compose service:
+
+```bash
+docker compose -f docker-compose.keycloak.yml up -d
+```
+
+Keycloak starts at [http://localhost:8080](http://localhost:8080). The local administration credentials in the Compose file are `admin` / `admin`; they are development defaults only. Configure the matching `KEYCLOAK_*` values in `Backend/.env` and set `KEYCLOAK_ENABLED=true` to expose the backend OIDC flow.
+
+The current frontend deliberately hides the SSO button, so enabling these variables alone does not add SSO to the login screen. The password/Sanctum login remains the supported UI path.
 
 ## Receipt printing
 
@@ -306,6 +354,14 @@ Verify MySQL is running and confirm the `DB_*` values in `Backend/.env`.
 
 Sign in again. Invalid Sanctum tokens are removed automatically.
 
+### Login reports another active session
+
+MiniPOS permits one active API token per user. Choose **Continue on this device** to revoke the previous token, or keep the existing device signed in.
+
+### QR checkout fails
+
+Confirm the `PAYWAY_*` credentials, sandbox URL, callback allowlist, and public HTTPS callback URL. Run `php artisan config:clear` after changing backend environment values.
+
 ### Receipt preview does not open
 
 Allow pop-ups for the frontend URL. Charge & Print stops when the browser blocks the preview window.
@@ -322,7 +378,8 @@ Configure the web server to send unknown frontend routes to `Frontend/dist/index
 - Restrict CORS to the real frontend origin.
 - Add roles and permissions for administrators and cashiers.
 - Configure tax, currency, store name, address, and receipt details.
-- Integrate and verify real card or QR payment providers.
+- Replace Keycloak development credentials and review realm/client settings if SSO is enabled.
+- Switch PayWay to production credentials only after validating callbacks, reconciliation, cancellations, and your operational refund process.
 - Add inventory adjustments, purchase orders, and audit logs as required.
 - Configure database backups, monitoring, logging, and rate limiting.
 - Pin frontend dependency versions before a production release.
@@ -331,7 +388,6 @@ Configure the web server to send unknown frontend routes to `Frontend/dist/index
 
 - [Backend API guide](./Backend/README.md)
 - [Frontend guide](./Frontend/README.md)
-- `Laravel_Week_13_Category_CRUD.pptx` for supporting category CRUD course material
 
 ## Contributing
 
